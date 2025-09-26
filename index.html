@@ -71,6 +71,16 @@
 
         .audio-unlock-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44, 42, 42, 0.85); backdrop-filter: blur(5px); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; font-family: 'Kalam', cursive; font-size: 2rem; line-height: 1.5; z-index: 10001; cursor: pointer; transition: opacity 0.5s ease; }
         .audio-unlock-overlay small { font-size: 1rem; font-family: 'Merriweather', serif; margin-top: 1rem; opacity: 0.8; }
+        
+        #unlock-text.loading {
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
         .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2.5rem; }
         .portfolio-item { background: #fff; border: 3px solid var(--text-main); padding: 1rem; box-shadow: 8px 8px 0 var(--paint-blue); transition: transform var(--transition-speed), box-shadow var(--transition-speed); }
         .portfolio-item:hover { transform: translate(4px, 4px); box-shadow: 4px 4px 0 var(--paint-blue); }
@@ -105,8 +115,8 @@
     <main>
         <section id="hero"><div class="container fade-in"><h1>Artist. Producer. Technologist.</h1><p>I craft immersive sonic journeys, blending musical artistry with a passion for innovative technology. From studio compositions to interactive digital experiences, my work is an exploration of sound's future.</p><a href="#portfolio" class="btn">View My Creations</a></div></section>
         <section id="portfolio"><div class="container"><div class="section-title-wrapper"><h2 class="fade-in">My Works</h2></div><div class="portfolio-grid"><div class="portfolio-item fade-in"><div class="video-container">
-            <!-- FIXED: Changed to youtube-nocookie.com for better compatibility -->
-            <iframe src="https://www.youtube-nocookie.com/embed/kMM4HmJQtfw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+            <!-- FIXED: Reverted to standard youtube.com embed for reliability -->
+            <iframe src="https://www.youtube.com/embed/kMM4HmJQtfw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
         </div><div class="portfolio-item-info"><h3>Sunriser Fan-Made Anthem</h3><p>An energetic anthem for the Sunrisers IPL team, featured on Gemini Music.</p></div></div></div></div></section>
         
         <section id="piano-section">
@@ -164,10 +174,12 @@
         
         function setupPiano() {
             piano = new Tone.Sampler({
-                urls: { C4: "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3", A4: "A4.mp3", C5: "C5.mp3", "D#5": "Ds5.mp3", "F#5": "Fs5.mp3", A5: "A5.mp3", C6: "C6.mp3" },
+                // REDUCED SAMPLES for faster loading to minimize latency
+                urls: { C4: "C4.mp3", A4: "A4.mp3", C5: "C5.mp3", A5: "A5.mp3", C6: "C6.mp3" },
                 release: 1,
                 baseUrl: "https://tonejs.github.io/audio/salamander/",
                 onload: () => {
+                    unlockText.classList.remove('loading');
                     unlockText.textContent = 'Piano Loaded!';
                     setupSong(); 
                     setTimeout(() => {
@@ -183,12 +195,15 @@
         async function unlockAudio() {
             try {
                 unlockText.textContent = 'Loading Piano Samples...';
+                unlockText.classList.add('loading');
                 await Tone.start();
+                Tone.context.latencyHint = 'interactive'; // Prioritize low latency
                 console.log('Tone.js audio context started');
                 setupPiano();
             } catch (e) {
                 console.error("Could not start Tone.js", e);
                 unlockText.textContent = 'Error loading audio.';
+                unlockText.classList.remove('loading');
             }
         }
         audioUnlockOverlay.addEventListener('click', unlockAudio, { once: true });
@@ -344,4 +359,5 @@
     </script>
 </body>
 </html>
+
 
