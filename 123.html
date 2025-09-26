@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Srujith Duvvuru | Interactive Piano Portfolio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Merriweather:wght@400;700&display=swap');
+        :root {
+            --canvas-bg: #f4f1ea; --text-main: #3a352f; --paint-blue: #4a7c9d;
+            --paint-sienna: #c97b63; --paint-ochre: #d9a443; --paint-black: #2c2a2a;
+            --transition-speed: 0.5s ease;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Merriweather', serif; background-color: var(--canvas-bg);
+            color: var(--text-main); overflow-x: hidden;
+        }
+        .container { max-width: 1100px; margin: auto; padding: 0 2rem; position: relative; z-index: 2; }
+        section { padding: 6rem 0; position: relative; }
+        h1, h2, h3 { font-family: 'Kalam', cursive; font-weight: 700; color: var(--text-main); }
+        h1 { font-size: 5rem; line-height: 1.1; margin-bottom: 1rem; color: var(--paint-blue); }
+        h2 { font-size: 3.5rem; text-align: center; margin-bottom: 1rem; }
+        h3 { font-size: 1.6rem; color: var(--paint-sienna); margin-bottom: 0.5rem; }
+        .section-title-wrapper { text-align: center; margin-bottom: 3rem; position: relative; }
+        .section-title-wrapper::after { content: ''; position: absolute; bottom: -15px; left: 50%; transform: translateX(-50%); width: 100px; height: 15px; background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAiPjxwYXRoIGQ9Ik0wIDIwQzUwIDAgMTUwIDIwIDIwMCAwIiBmaWxsPSJub25lIiBzdHJva2U9IiNkOWE0NDMiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PC9zdmc+'); background-repeat: no-repeat; background-size: contain; }
+        #main-header { padding: 1.5rem 0; position: absolute; top: 0; left: 0; width: 100%; z-index: 1000; }
+        #main-header .container { display: flex; justify-content: space-between; align-items: center; }
+        #main-header .logo { font-family: 'Kalam', cursive; font-size: 2rem; font-weight: 700; color: var(--text-main); text-decoration: none; }
+        #main-header nav a { text-decoration: none; color: var(--text-main); font-weight: 700; font-size: 1.1rem; margin-left: 30px; transition: color var(--transition-speed); }
+        #main-header nav a:hover { color: var(--paint-sienna); }
+        #hero { display: flex; align-items: center; min-height: 100vh; }
+        #hero p { font-size: 1.2rem; line-height: 1.8; margin-bottom: 2rem; max-width: 600px; }
+        .btn { display: inline-block; background: var(--paint-blue); color: var(--canvas-bg); border: none; padding: 1rem 2.5rem; text-decoration: none; border-radius: 50px; font-weight: 700; font-family: 'Merriweather', serif; transition: all var(--transition-speed); box-shadow: 5px 5px 0px var(--paint-sienna); }
+        .btn:hover { transform: translate(3px, 3px); box-shadow: 2px 2px 0px var(--paint-sienna); }
+        
+        /* --- Piano Section with Octave Controls --- */
+        #piano-section { background-color: rgba(255,255,255,0.5); }
+        .octave-controls { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+        .octave-btn { background: var(--paint-sienna); color: var(--canvas-bg); border: none; padding: 0.5rem 1rem; font-family: 'Kalam', cursive; font-size: 1.2rem; border-radius: 5px; box-shadow: 3px 3px 0px var(--paint-black); transition: all 0.2s ease; cursor: pointer; }
+        .octave-btn:hover { transform: translate(2px, 2px); box-shadow: 1px 1px 0px var(--paint-black); }
+        .octave-btn:active { transform: translate(3px, 3px); box-shadow: 0px 0px 0px var(--paint-black); }
+        .octave-btn:disabled { background: #aaa; cursor: not-allowed; transform: none; box-shadow: 3px 3px 0px var(--paint-black); }
+        #current-octave-display { font-family: 'Kalam', cursive; font-size: 1.5rem; font-weight: 700; width: 120px; text-align: center; }
+        
+        .piano-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 1rem; border: 2px solid var(--text-main); box-shadow: 5px 5px 0px var(--paint-ochre); }
+        .piano { display: flex; width: 1100px; margin: 0; height: 250px; position: relative; }
+        .key { border: 2px solid var(--paint-black); border-radius: 0 0 5px 5px; cursor: pointer; transition: all 0.07s ease; }
+        .key.white { width: calc(100% / 10); height: 100%; background-color: white; }
+        .key.black { width: calc(100% / 10 * 0.6); height: 60%; background-color: var(--paint-black); position: absolute; z-index: 2; }
+        .key.playing { transform: scale(0.98); border-color: var(--paint-ochre); box-shadow: 0 0 1rem var(--paint-ochre); }
+        
+        .key.black[data-note="C#"]:not(.octave-up) { left: calc(calc(100% / 10) * 0.7); }
+        .key.black[data-note="D#"]:not(.octave-up) { left: calc(calc(100% / 10) * 1.7); }
+        .key.black[data-note="F#"] { left: calc(calc(100% / 10) * 3.7); }
+        .key.black[data-note="G#"] { left: calc(calc(100% / 10) * 4.7); }
+        .key.black[data-note="A#"] { left: calc(calc(100% / 10) * 5.7); }
+        .key.black[data-note="C#"].octave-up { left: calc(calc(100% / 10) * 7.7); }
+        .key.black[data-note="D#"].octave-up { left: calc(calc(100% / 10) * 8.7); }
+
+        /* --- Song Tutorial Styles --- */
+        .song-tutorial { text-align: center; margin-bottom: 2rem; background: rgba(255, 255, 255, 0.7); padding: 1.5rem; border-radius: 10px; border: 2px solid var(--paint-ochre); }
+        .song-tutorial h3 { color: var(--paint-blue); margin-bottom: 0.5rem; }
+        #song-notes-display { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 1rem; }
+        .song-note { display: inline-block; font-family: 'Kalam', cursive; font-size: 1.8rem; font-weight: 700; width: 50px; height: 50px; line-height: 50px; text-align: center; border-radius: 5px; background: #fff; border: 2px solid var(--text-main); color: var(--text-main); transition: all 0.3s ease; }
+        .song-note.played-key { background-color: var(--paint-sienna); color: white; opacity: 1; transform: scale(1.1); }
+        .song-tutorial-btns { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1.5rem; }
+
+        .audio-unlock-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44, 42, 42, 0.85); backdrop-filter: blur(5px); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; font-family: 'Kalam', cursive; font-size: 2rem; line-height: 1.5; z-index: 10001; cursor: pointer; transition: opacity 0.5s ease; }
+        .audio-unlock-overlay small { font-size: 1rem; font-family: 'Merriweather', serif; margin-top: 1rem; opacity: 0.8; }
+        .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2.5rem; }
+        .portfolio-item { background: #fff; border: 3px solid var(--text-main); padding: 1rem; box-shadow: 8px 8px 0 var(--paint-blue); transition: transform var(--transition-speed), box-shadow var(--transition-speed); }
+        .portfolio-item:hover { transform: translate(4px, 4px); box-shadow: 4px 4px 0 var(--paint-blue); }
+        .video-container { position: relative; padding-bottom: 56.25%; height: 0; border: 2px solid var(--text-main); }
+        .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+        .portfolio-item-info { padding: 1.5rem 0.5rem 0.5rem; }
+        .fade-in { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
+        .fade-in.visible { opacity: 1; transform: translateY(0); }
+        
+        @media (max-width: 768px) {
+            body { cursor: auto; } h1 { font-size: 3rem; } h2 { font-size: 2.5rem; }
+            #main-header .container { flex-direction: column; gap: 1rem; }
+            #main-header nav { display: flex; justify-content: center; flex-wrap: wrap; }
+            #main-header nav a { margin: 0 10px; } 
+            /* Hide piano on mobile */
+            #piano-section, #main-header nav a[href="#piano-section"] {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="audio-unlock-overlay" id="audio-unlock">
+        <div id="unlock-text">Click to Start</div>
+        <small>This will load the high-quality piano samples.</small>
+    </div>
+
+    <header id="main-header">
+        <div class="container"><a href="#hero" class="logo">Srujith Duvvuru</a><nav><a href="#portfolio">Works</a><a href="#piano-section">Piano</a><a href="#contact">Contact</a></nav></div>
+    </header>
+
+    <main>
+        <section id="hero"><div class="container fade-in"><h1>Artist. Producer. Technologist.</h1><p>I craft immersive sonic journeys, blending musical artistry with a passion for innovative technology. From studio compositions to interactive digital experiences, my work is an exploration of sound's future.</p><a href="#portfolio" class="btn">View My Creations</a></div></section>
+        <section id="portfolio"><div class="container"><div class="section-title-wrapper"><h2 class="fade-in">My Works</h2></div><div class="portfolio-grid"><div class="portfolio-item fade-in"><div class="video-container">
+            <!-- FIXED: Changed to youtube-nocookie.com for better compatibility -->
+            <iframe src="https://www.youtube-nocookie.com/embed/kMM4HmJQtfw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        </div><div class="portfolio-item-info"><h3>Sunriser Fan-Made Anthem</h3><p>An energetic anthem for the Sunrisers IPL team, featured on Gemini Music.</p></div></div></div></div></section>
+        
+        <section id="piano-section">
+            <div class="container">
+                <div class="section-title-wrapper"><h2 class="fade-in">Interactive Piano</h2></div>
+                
+                <div class="song-tutorial fade-in">
+                    <h3>Play a Tune: <span id="song-title">Twinkle Twinkle</span></h3>
+                    <p>Follow the letters on screen and press the corresponding keys, or listen to the tune.</p>
+                    <div id="song-notes-display"></div>
+                    <div class="song-tutorial-btns">
+                        <button id="listen-song-btn" class="octave-btn">Listen to Tune</button>
+                        <button id="reset-song-btn" class="octave-btn" style="display:none;">Play Again</button>
+                    </div>
+                </div>
+
+                <div class="octave-controls fade-in">
+                    <button id="octave-down" class="octave-btn">&lt; Octave (Z)</button>
+                    <span id="current-octave-display">Octave: 4</span>
+                    <button id="octave-up" class="octave-btn">(X) Octave &gt;</button>
+                </div>
+                <div class="piano-wrapper fade-in">
+                    <div class="piano">
+                        <div data-note="C" class="key white"></div> <div data-note="D" class="key white"></div>
+                        <div data-note="E" class="key white"></div> <div data-note="F" class="key white"></div>
+                        <div data-note="G" class="key white"></div> <div data-note="A" class="key white"></div>
+                        <div data-note="B" class="key white"></div> <div data-note="C" class="key white octave-up"></div>
+                        <div data-note="D" class="key white octave-up"></div> <div data-note="E" class="key white octave-up"></div>
+                        <div data-note="C#" class="key black"></div> <div data-note="D#" class="key black"></div>
+                        <div data-note="F#" class="key black"></div> <div data-note="G#" class="key black"></div>
+                        <div data-note="A#" class="key black"></div> <div data-note="C#" class="key black octave-up"></div>
+                        <div data-note="D#" class="key black octave-up"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact"><div class="container fade-in"><div class="section-title-wrapper"><h2>Let's Create</h2></div><p style="text-align:center; max-width: 600px; margin: -2rem auto 2rem auto;">Have an idea for a project or collaboration? I'd love to hear from you.</p><div style="text-align: center;"><a href="mailto:your.email@example.com" class="btn">Get In Touch</a></div></div></section>
+    </main>
+
+    <script>
+        // --- Tone.js Piano and Song Logic ---
+        const audioUnlockOverlay = document.getElementById('audio-unlock');
+        const unlockText = document.getElementById('unlock-text');
+        
+        const octaveDisplay = document.getElementById('current-octave-display');
+        const octaveDownBtn = document.getElementById('octave-down');
+        const octaveUpBtn = document.getElementById('octave-up');
+        let currentOctave = 4;
+        const MIN_OCTAVE = 2;
+        const MAX_OCTAVE = 6;
+
+        let piano;
+        const reverb = new Tone.Reverb(1.2).toDestination();
+        
+        function setupPiano() {
+            piano = new Tone.Sampler({
+                urls: { C4: "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3", A4: "A4.mp3", C5: "C5.mp3", "D#5": "Ds5.mp3", "F#5": "Fs5.mp3", A5: "A5.mp3", C6: "C6.mp3" },
+                release: 1,
+                baseUrl: "https://tonejs.github.io/audio/salamander/",
+                onload: () => {
+                    unlockText.textContent = 'Piano Loaded!';
+                    setupSong(); 
+                    setTimeout(() => {
+                        audioUnlockOverlay.style.opacity = '0';
+                        audioUnlockOverlay.addEventListener('transitionend', () => { audioUnlockOverlay.style.display = 'none'; }, { once: true });
+                    }, 800);
+                }
+            }).connect(reverb);
+             // Set a default BPM for the song playback
+            Tone.Transport.bpm.value = 100;
+        }
+
+        async function unlockAudio() {
+            try {
+                unlockText.textContent = 'Loading Piano Samples...';
+                await Tone.start();
+                console.log('Tone.js audio context started');
+                setupPiano();
+            } catch (e) {
+                console.error("Could not start Tone.js", e);
+                unlockText.textContent = 'Error loading audio.';
+            }
+        }
+        audioUnlockOverlay.addEventListener('click', unlockAudio, { once: true });
+
+        function playSound(noteName, isOctaveUp = false, fullNoteName = null) {
+            if (!piano || Tone.context.state !== 'running') return;
+            
+            const noteToPlay = fullNoteName ? fullNoteName : noteName + (isOctaveUp ? currentOctave + 1 : currentOctave);
+            piano.triggerAttackRelease(noteToPlay, "1.5s");
+
+            const keySelector = `.key[data-note="${noteName}"]` + (isOctaveUp ? '.octave-up' : ':not(.octave-up)');
+            const key = document.querySelector(keySelector);
+            if (key) {
+                key.classList.add('playing');
+                setTimeout(() => key.classList.remove('playing'), 200);
+            }
+        }
+        
+        function changeOctave(direction) {
+            currentOctave += direction;
+            if (currentOctave < MIN_OCTAVE) currentOctave = MIN_OCTAVE;
+            if (currentOctave > MAX_OCTAVE) currentOctave = MAX_OCTAVE;
+            octaveDisplay.textContent = `Octave: ${currentOctave}`;
+        }
+        
+        octaveDownBtn.addEventListener('click', () => changeOctave(-1));
+        octaveUpBtn.addEventListener('click', () => changeOctave(1));
+
+        const keyMap = {
+            'KeyA': { note: 'C', octaveUp: false }, 'KeyW': { note: 'C#', octaveUp: false },
+            'KeyS': { note: 'D', octaveUp: false }, 'KeyE': { note: 'D#', octaveUp: false },
+            'KeyD': { note: 'E', octaveUp: false }, 'KeyF': { note: 'F', octaveUp: false },
+            'KeyT': { note: 'F#', octaveUp: false }, 'KeyG': { note: 'G', octaveUp: false },
+            'KeyY': { note: 'G#', octaveUp: false }, 'KeyH': { note: 'A', octaveUp: false },
+            'KeyU': { note: 'A#', octaveUp: false }, 'KeyJ': { note: 'B', octaveUp: false },
+            'KeyK': { note: 'C', octaveUp: true }, 'KeyO': { note: 'C#', octaveUp: true },
+            'KeyL': { note: 'D', octaveUp: true }, 'KeyP': { note: 'D#', octaveUp: true },
+            'Semicolon': { note: 'E', octaveUp: true },
+            'KeyZ': { action: 'octave-down' }, 'KeyX': { action: 'octave-up' }
+        };
+
+        // --- Song Tutorial Logic ---
+        let songStep = 0;
+        let songModeActive = true;
+        const songNotesDisplay = document.getElementById('song-notes-display');
+        const listenSongBtn = document.getElementById('listen-song-btn');
+        const resetSongBtn = document.getElementById('reset-song-btn');
+
+        const song = [
+            { time: '0:0', code: 'KeyA', note: 'C4', octaveUp: false, display: 'A', duration: '4n' },
+            { time: '0:1', code: 'KeyA', note: 'C4', octaveUp: false, display: 'A', duration: '4n' },
+            { time: '0:2', code: 'KeyG', note: 'G4', octaveUp: false, display: 'G', duration: '4n' },
+            { time: '0:3', code: 'KeyG', note: 'G4', octaveUp: false, display: 'G', duration: '4n' },
+            { time: '1:0', code: 'KeyH', note: 'A4', octaveUp: false, display: 'H', duration: '4n' },
+            { time: '1:1', code: 'KeyH', note: 'A4', octaveUp: false, display: 'H', duration: '4n' },
+            { time: '1:2', code: 'KeyG', note: 'G4', octaveUp: false, display: 'G', duration: '2n' },
+            { time: '2:0', code: 'KeyF', note: 'F4', octaveUp: false, display: 'F', duration: '4n' },
+            { time: '2:1', code: 'KeyF', note: 'F4', octaveUp: false, display: 'F', duration: '4n' },
+            { time: '2:2', code: 'KeyD', note: 'E4', octaveUp: false, display: 'D', duration: '4n' },
+            { time: '2:3', code: 'KeyD', note: 'E4', octaveUp: false, display: 'D', duration: '4n' },
+            { time: '3:0', code: 'KeyS', note: 'D4', octaveUp: false, display: 'S', duration: '4n' },
+            { time: '3:1', code: 'KeyS', note: 'D4', octaveUp: false, display: 'S', duration: '4n' },
+            { time: '3:2', code: 'KeyA', note: 'C4', octaveUp: false, display: 'A', duration: '2n' }
+        ];
+
+        let songPart;
+        function setupSong() {
+            if (songPart) songPart.dispose();
+            Tone.Transport.stop();
+            Tone.Transport.cancel();
+
+            songNotesDisplay.innerHTML = '';
+            songModeActive = true;
+            songStep = 0;
+            listenSongBtn.style.display = 'inline-block';
+            resetSongBtn.style.display = 'none';
+            listenSongBtn.disabled = false;
+
+            song.forEach(noteData => {
+                const noteEl = document.createElement('span');
+                noteEl.classList.add('song-note');
+                noteEl.textContent = noteData.display;
+                songNotesDisplay.appendChild(noteEl);
+                noteData.element = noteEl;
+            });
+
+            songPart = new Tone.Part(((time, value) => {
+                piano.triggerAttackRelease(value.note, value.duration, time);
+                Tone.Draw.schedule(() => {
+                    const keyNote = value.note.slice(0, -1); // 'C4' -> 'C'
+                    const isOctaveUp = keyNote === 'C' && value.code === 'KeyK'; // Basic logic to find right piano key
+                    playSound(keyNote, isOctaveUp, value.note);
+                    value.element.classList.add('played-key');
+                }, time);
+            }), song).start(0);
+
+            // Schedule end of song
+            Tone.Transport.scheduleOnce(() => {
+                listenSongBtn.disabled = false;
+                resetSongBtn.style.display = 'inline-block';
+                listenSongBtn.style.display = 'none';
+            }, "4m"); // Song length is 4 measures
+        }
+        
+        listenSongBtn.addEventListener('click', () => {
+             if (Tone.context.state !== 'running' || !piano) return;
+             setupSong(); // Reset song state before playing
+             listenSongBtn.disabled = true;
+             Tone.Transport.start();
+        });
+
+        resetSongBtn.addEventListener('click', setupSong);
+
+        window.addEventListener('keydown', e => {
+            if (e.repeat) return; 
+
+            if (songModeActive && songStep < song.length && e.code === song[songStep].code) {
+                const currentNote = song[songStep];
+                playSound(currentNote.note.slice(0, -1), currentNote.octaveUp);
+                currentNote.element.classList.add('played-key');
+                songStep++;
+
+                if (songStep >= song.length) {
+                    songModeActive = false;
+                    resetSongBtn.style.display = 'inline-block';
+                    listenSongBtn.style.display = 'none';
+                }
+                return;
+            }
+
+            const keyAction = keyMap[e.code];
+            if (!keyAction) return;
+            e.preventDefault(); 
+            if (keyAction.action === 'octave-down') changeOctave(-1);
+            else if (keyAction.action === 'octave-up') changeOctave(1);
+            else playSound(keyAction.note, keyAction.octaveUp);
+        });
+
+        document.querySelectorAll('.key').forEach(key => {
+            const note = key.dataset.note;
+            const isOctaveUp = key.classList.contains('octave-up');
+            key.addEventListener('mousedown', () => playSound(note, isOctaveUp));
+            key.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                playSound(note, isOctaveUp);
+            }, { passive: false });
+        });
+
+        // --- Other JS ---
+        const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('visible'); } }); }, { threshold: 0.1 });
+        const fadeElements = document.querySelectorAll('.fade-in');
+        fadeElements.forEach(el => observer.observe(el));
+    </script>
+</body>
+</html>
+
